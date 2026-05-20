@@ -44,15 +44,6 @@ unit umain;
       • PopulateReadGrid / PopulateWriteConfirmGrid — fills pnlGrid
       • increments FTxCount / FErrCount
 
-  SNIFFER UNIT REUSE
-  ──────────────────
-    UModbusTypes   — FUNC_* constants, TByteArray, TModbusPacket,
-                     GetFunctionName, GetExceptionName.
-    UModbusUtils   — CRC16, IsValidCRC, BytesToHex, BigEndianWord,
-                     LittleEndianWord, FormatTimestamp.
-    UModbusParser  — ParsePacket (used inside UModbusMaster).
-    UModbusMaster  — TModbusMaster, TModbusTransaction.
-
   SCAN CYCLE
   ──────────
   When scanning is active, FScanTimer fires every speScanRate ms.  Each
@@ -258,12 +249,7 @@ implementation
 
 { =============================================================================
   FormCreate / FormDestroy
-  =============================================================================
-  Order matters: build the dynamic controls BEFORE populating combos/spins,
-  then wire OnChange handlers LAST so they cannot fire against half-built
-  state during initialisation (InitCombos sets ItemIndex, which would reach
-  RebuildGridRows; if FGrid were nil that would crash).
-  ============================================================================= }
+  =============================================================================}
 
 procedure TfrmMain.FormCreate(Sender: TObject);
 begin
@@ -433,7 +419,6 @@ begin
                             + [goRowSelect, goColSizing, goThumbTracking]
                             - [goEditing, goAlwaysShowEditor];
 
-  { Dark theme — matches the companion sniffer }
   FGrid.Color          := $001E1E1E;
   FGrid.Font.Color     := $00CCCCCC;
   FGrid.Font.Name      := 'Consolas';
@@ -490,7 +475,7 @@ var
   end;
 
 begin
-  if FGrid = nil then Exit;   { guard: may be called before BuildGrid }
+  if FGrid = nil then Exit;
 
   N         := speNumberRegisters.Value;
   HexMode   := cmbStartAddressBase.ItemIndex = 1;
@@ -563,8 +548,8 @@ end;
 { =============================================================================
   Connect / Disconnect — serial port only
   =============================================================================
-  Connect does NOT start scanning.  Disconnect always stops any active scan
-  first so the timer can never fire against a closed port.
+  Disconnect always stops any active scan first so the timer can never fire
+  against a closed port.
   ============================================================================= }
 
 procedure TfrmMain.btnConnectClick(Sender: TObject);
@@ -598,7 +583,7 @@ end;
 
 procedure TfrmMain.btnCommConfigClick(Sender: TObject);
 { Delegates to LazSerial's own modal setup dialog, then reflects the choice
-  in the status bar.  ConstsBaud[] maps TBaudRate → integer for display. }
+  in the status bar. }
 begin
   FSerial.ShowSetupDialog;
   if FSerial.Device <> '' then
@@ -622,8 +607,7 @@ end;
 { =============================================================================
   Safe grid cell reader
   =============================================================================
-  Returns the trimmed cell text, or '' if the row is out of range, so write
-  paths stay robust when the grid has fewer rows than expected.
+  Returns the trimmed cell text, or '' if the row is out of range.
   ============================================================================= }
 
 function TfrmMain.SafeCell(ACol, ARow: Integer): string;
@@ -723,8 +707,7 @@ begin
 end;
 
 procedure TfrmMain.ScanTimerTick(Sender: TObject);
-{ One scan iteration.  The timer is disabled first so a slow transaction
-  cannot cause overlapping ticks; re-armed afterwards only if still active. }
+{ One scan iteration. }
 begin
   FScanTimer.Enabled := False;
   try
@@ -1105,6 +1088,7 @@ begin
 end;
 
 function TfrmMain.GetStartAddress: Word;
+{ TODO: Implement Hex address }
 { In hex mode the spin's decimal digits are re-interpreted as hex, so
   typing 100 with Hex selected addresses register 0x100 (256). }
 var
